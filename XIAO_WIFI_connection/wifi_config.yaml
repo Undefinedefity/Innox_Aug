@@ -1,0 +1,12 @@
+# WiFi 配置文件
+# 请根据您的网络环境修改以下配置
+
+# ssid: "Innox-2.4G"
+# password: "innox2.4#"
+
+ssid: "ESP32-Hotspot"
+password: "12345678"
+
+# 可选配置（未来扩展）
+# timeout: 30
+# retry_count: 3

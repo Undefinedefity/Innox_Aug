@@ -1,0 +1,51 @@
+# Arduino IDE 临时文件
+*.hex
+*.elf
+*.bin
+*.map
+*.eep
+*.lss
+*.sym
+*.tmp
+*.bak
+*.swp
+*~
+
+# Arduino IDE 构建目录
+build/
+*.build/
+
+# Python 相关
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# 下载目录
+downloads/
+*.log
+
+# 系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE 文件
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# 临时文件
+*.tmp
+*.temp 
