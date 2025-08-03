@@ -3,11 +3,11 @@
 #include <SD.h>
 #include <SPI.h>
 
-const char *ssid = "Innoxsz-2.4G";
-const char *password = "innox2.4#";
-
-// const char *ssid = "ESP32-Hotspot";
-// const char *password = "12345678";
+// ESP32 AP模式配置
+const char *ap_ssid = "XIAO_ESP32S3";
+const char *ap_password = "12345678";
+const int ap_channel = 1;  // WiFi频道
+const int ap_max_connections = 4;  // 最大连接数
 
 WebServer server(80);
 
@@ -19,24 +19,33 @@ void setup()
   Serial.begin(115200);
   delay(1000);
 
-  Serial.println("XIAO ESP32S3 SD 卡文件服务器启动中...");
+  Serial.println("XIAO ESP32S3 AP模式文件服务器启动中...");
 
   // 优化 WiFi 设置以提高传输速度
   WiFi.setSleep(false);  // 禁用 WiFi 睡眠模式
   WiFi.setTxPower(WIFI_POWER_19_5dBm);  // 设置最大发射功率
-
-  // 连接 WiFi
-  WiFi.begin(ssid, password);
-  Serial.print("正在连接 WiFi");
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(500);
-    Serial.print(".");
+  
+  // 设置WiFi模式为AP模式
+  WiFi.mode(WIFI_AP);
+  
+  // 配置AP参数
+  WiFi.softAPConfig(IPAddress(192, 168, 4, 1), IPAddress(192, 168, 4, 1), IPAddress(255, 255, 255, 0));
+  
+  // 启动AP
+  if (WiFi.softAP(ap_ssid, ap_password, ap_channel, false, ap_max_connections)) {
+    Serial.println("ESP32 AP模式启动成功!");
+    Serial.print("热点名称 (SSID): ");
+    Serial.println(ap_ssid);
+    Serial.print("热点密码: ");
+    Serial.println(ap_password);
+    Serial.print("AP IP 地址: ");
+    Serial.println(WiFi.softAPIP());
+    Serial.print("最大连接数: ");
+    Serial.println(ap_max_connections);
+  } else {
+    Serial.println("ESP32 AP模式启动失败!");
+    ESP.restart();
   }
-  Serial.println();
-  Serial.println("WiFi 连接成功!");
-  Serial.print("IP 地址: ");
-  Serial.println(WiFi.localIP());
 
   // 初始化 SD 卡 - XIAO ESP32S3 Sense 使用 GPIO21 作为 CS 引脚
   if (!SD.begin(SD_CS_PIN))
@@ -68,7 +77,9 @@ void setup()
     html += "<div class='container'>";
     html += "<h1>📁 XIAO ESP32S3 文件服务器</h1>";
     html += "<div class='info'>";
-    html += "<strong>IP 地址:</strong> " + WiFi.localIP().toString() + "<br>";
+    html += "<strong>AP IP 地址:</strong> " + WiFi.softAPIP().toString() + "<br>";
+    html += "<strong>热点名称:</strong> " + String(ap_ssid) + "<br>";
+    html += "<strong>连接设备数:</strong> " + String(WiFi.softAPgetStationNum()) + "/" + String(ap_max_connections) + "<br>";
     html += "<strong>使用方法:</strong> 点击文件名下载，或使用 Python 脚本批量下载";
     html += "</div>";
     
@@ -176,27 +187,49 @@ void setup()
     json += "]}";
     server.send(200, "application/json; charset=utf-8", json); });
 
+  // 设置路由：/status - 返回AP状态信息
+  server.on("/status", HTTP_GET, []()
+            {
+    String json = "{";
+    json += "\"ap_ssid\":\"" + String(ap_ssid) + "\",";
+    json += "\"ap_ip\":\"" + WiFi.softAPIP().toString() + "\",";
+    json += "\"connected_devices\":" + String(WiFi.softAPgetStationNum()) + ",";
+    json += "\"max_connections\":" + String(ap_max_connections) + ",";
+    json += "\"free_memory\":" + String(ESP.getFreeHeap()) + ",";
+    json += "\"uptime\":" + String(millis());
+    json += "}";
+    server.send(200, "application/json; charset=utf-8", json); });
+
   // 优化服务器设置
   server.enableCORS(true);  // 启用跨域支持
   server.enableCrossOrigin(true);  // 启用跨域
   
   server.begin();
   Serial.println("HTTP 服务器已启动");
-  Serial.println("访问 http://" + WiFi.localIP().toString() + " 查看文件列表");
+  Serial.println("访问 http://" + WiFi.softAPIP().toString() + " 查看文件列表");
   Serial.println("使用 /file?name=文件名 下载特定文件");
   Serial.println("使用 /list 获取 JSON 格式的文件列表");
-  Serial.println("优化设置: WiFi 睡眠禁用，最大发射功率，32KB 缓冲区");
+  Serial.println("优化设置: AP模式，WiFi 睡眠禁用，最大发射功率");
 }
 
 void loop()
 {
   server.handleClient();
 
-  // 检查 WiFi 连接状态
-  if (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.println("WiFi 连接断开，尝试重新连接...");
-    WiFi.reconnect();
-    delay(5000);
+  // 定期显示AP状态和内存使用情况（每30秒）
+  static unsigned long lastStatusCheck = 0;
+  if (millis() - lastStatusCheck > 30000) {
+    Serial.printf("可用内存: %d 字节, 连接设备数: %d/%d\n", 
+                  ESP.getFreeHeap(), 
+                  WiFi.softAPgetStationNum(), 
+                  ap_max_connections);
+    
+    // 显示连接的设备信息
+    if (WiFi.softAPgetStationNum() > 0) {
+      Serial.println("连接的设备:");
+      Serial.printf("  当前连接数: %d/%d\n", WiFi.softAPgetStationNum(), ap_max_connections);
+    }
+    
+    lastStatusCheck = millis();
   }
 }
