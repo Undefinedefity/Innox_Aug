@@ -12,12 +12,12 @@ import sys
 from urllib.parse import urljoin, quote
 
 class ESP32FileDownloader:
-    def __init__(self, base_url="http://10.10.95.232"):
+    def __init__(self, base_url="http://192.168.4.1"):
         """
         初始化下载器
         
         Args:
-            base_url (str): ESP32S3 的 IP 地址，默认为 10.10.95.232
+            base_url (str): ESP32S3 的 IP 地址，默认为 http://192.168.4.1
         """
         self.base_url = base_url.rstrip('/')
         self.session = requests.Session()
@@ -218,9 +218,9 @@ def main():
     print("📁 XIAO ESP32S3 文件下载器")
     print("=" * 50)
     
-    # 获取 ESP32S3 的 IP 地址
-    default_ip = "10.10.95.232"
-    ip_input = input(f"请输入 ESP32S3 的 IP 地址 (默认: {default_ip}): ").strip()
+    # 获取 ESP32S3 的 IP 地址（AP模式默认IP）
+    default_ip = "192.168.4.1"
+    ip_input = input(f"请输入 ESP32S3 的 IP 地址 (AP模式默认: {default_ip}): ").strip()
     
     if not ip_input:
         ip_input = default_ip
@@ -243,9 +243,10 @@ def main():
     except Exception as e:
         print(f"❌ 连接失败: {e}")
         print("请检查:")
-        print("1. ESP32S3 是否已启动并连接到 WiFi")
-        print("2. IP 地址是否正确")
-        print("3. 网络连接是否正常")
+        print("1. ESP32S3 是否已启动AP模式")
+        print("2. 是否已连接到ESP32的WiFi热点 (XIAO_ESP32S3_FileServer)")
+        print("3. IP 地址是否正确 (默认: 192.168.4.1)")
+        print("4. 网络连接是否正常")
         return
     
     # 开始交互式下载
